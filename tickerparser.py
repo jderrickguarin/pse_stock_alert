@@ -4,7 +4,7 @@ import json
 
 PSEAPI_URL = 'http://pseapi.com/api/Stock/'
 
-def getDate(param):
+def get_date(param):
     rawdate = datetime.datetime.now()
     m = rawdate.strftime("%m")
     d = rawdate.strftime("%d")
@@ -30,7 +30,7 @@ def getDate(param):
         print("You entered the wrong parameter. Accepted parameters: curr, fstday, lstyr, prevd, all")
         return None
 
-def getData(URL):
+def get_data(URL):
     # Strictly get from PSE API
     try:
         with requests.get(URL) as response:
@@ -52,19 +52,19 @@ def getData(URL):
     print(data, type(data))
     return data
 
-def getURL(ticker, date):
+def get_URL(ticker, date):
     try:
         return f"{PSEAPI_URL}{ticker}/{date}"
     except TypeError:
         return "Check getDate argument"
 
-def getPrevDayPrice(ticker, date):
+def get_prev_day_price(ticker, date):
     return PSEAPI_URL + ticker
 
-def getYoYPrice(ticker):
+def get_yoy_price(ticker):
     return
 
-def getYTDPrice(ticker):
+def get_ytd_price(ticker):
     return
 
 

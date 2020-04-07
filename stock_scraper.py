@@ -1,26 +1,25 @@
-import requests
-import json
-#from bs4 import BeautifulSoup
 import smtplib
 import time
 import datetime
 import tickerparser
+import file_reader
 
-STOCK = 'AXLM'
-DATE = tickerparser.getDate('prevd')
-#DATE = '04-02-2020'
-STOCK_DATE_PRICE = tickerparser.getURL(STOCK, DATE)
+DATE = '04-02-2020'
+#DATE = tickerparser.get_date('prevd')
+STOCKS = file_reader.get_tickers()
+STOCKS_URL = [tickerparser.get_URL(stock, DATE) for stock in STOCKS]
+TICKER_TO_URL = dict(zip(STOCKS, STOCKS_URL))
 
 def check_price():
-    data = tickerparser.getData(STOCK_DATE_PRICE)
-
-    print(data, type(data))
+    for ticker, stockdata in TICKER_TO_URL.items():
+        data = tickerparser.get_data(stockdata)
+        print(data, type(data))
     
-    try:
-        lastClosingPrice = data['close']
-        return float(lastClosingPrice)
-    except:
-        return 'No data found'
+        try:
+            lastClosingPrice = data['close']
+            yield ticker, float(lastClosingPrice)
+        except:
+            yield ticker, 'No data found'
 
 def send_mail():
     server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -30,25 +29,36 @@ def send_mail():
 
     server.login('psestockalert@gmail.com', 'ksadagmffdgoibbn')
 
-    if check_price() == 'No data found':
-        print('\nNo mail sent')
-    else:
-        price = str(check_price())
-        subject = ('$' + STOCK)
-        body = 'Closing price for '+ DATE + ': Php ' + price 
+    stocks_to_send = {}
+    subject = 'Daily PSE Stocks Watchlist'
+    body = ''
+    picks = check_price()
+    for pick in picks:
 
-        msg = f"Subject: {subject}\n\n{body}"
+        if pick == 'No data found':
+            print(f'\nNo data from {pick[0]}')
+        else:
+            price = str(pick[1])
+            stocks_to_send[pick[0]] = price
 
-        server.sendmail(
-            'psestockalert@gmail.com',
-            'derrickguarin@gmail.com',
-            msg
-            )
+            body += f'Closing price for ${pick[0]} on {DATE}: Php {price}\n'
 
-        print(price)
-        print('\nEmail sent!') 
+    msg = f"Subject: {subject}\n\n{body}"
+
+    server.sendmail(
+        'psestockalert@gmail.com',
+        'derrickguarin@gmail.com',
+        msg
+        )
+
+    print(stocks_to_send)
+    print('\nEmail sent!') 
     
     #server.quit()
 
 send_mail()
+
+
 #print(DATE)
+#print(STOCKS)
+#print(TICKER_TO_URL)
