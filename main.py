@@ -4,7 +4,7 @@ import datetime
 import tickerparser
 import file_reader
 
-DATE = '04-02-2020'
+DATE = '03-25-2020'
 #DATE = tickerparser.get_date('prevd')
 STOCKS = file_reader.get_tickers()
 STOCKS_URL = [tickerparser.get_URL(stock, DATE) for stock in STOCKS]
