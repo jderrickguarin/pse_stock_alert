@@ -3,16 +3,14 @@ import requests
 import datetime as dt
 import json 
 
-STOCK_URL = 'http://pseapi.com/api/Stock/'
-MARKET_URL = 'http://pseapi.com/api/Market/'
-SECTOR_URL = 'http://pseapi.com/api/Sector/'
+STOCK_URL = 'http://phisix-api.appspot.com/stocks/'
 
 # Transforms a date object to a string-typed date
 def stringify(rawdate):
     m = rawdate.strftime("%m")
     d = rawdate.strftime("%d")
     y = rawdate.strftime("%Y")
-    return f"{m}-{d}-{y}" 
+    return f"{y}-{m}-{d}" 
 
 # Transforms a string-typed date to date object
 def objectify(strdate):
@@ -22,7 +20,7 @@ def objectify(strdate):
 # Returns URL from PSE API given the stock ticker and date
 def get_stock_URL(ticker, date):
     try:
-        return f"{STOCK_URL}{ticker}/{date}"
+        return f"{STOCK_URL}{ticker}.{date}.json"
     except TypeError:
         print("Check ticker or date argument")
         return None
@@ -48,6 +46,26 @@ def get_data(URL):
 
     print(data, type(data))
     return data
+
+# Process json data with nested data and returns a clean dict
+def parse_data(data):
+    if data != None:
+        data_dict = {}
+        for k, v in data.items():
+            if isinstance(v, list):
+                d = v[0]
+                for nk, nv in d.items():
+                    if isinstance(nv, dict):
+                        for nnk, nnv in nv.items():
+                            if isinstance(nnv, str) == False:
+                                data_dict[nnk] = nnv
+                    else:
+                        data_dict[nk] = nv
+            else:
+                data_dict[k] = v
+
+        return data_dict
+    else: return data
 
 # Expects a date string of form "mm-dd-yyyy" and can return a tuple of date objects or strings
 def get_dates(start, end = dt.date.today(), dateObject = False):
@@ -92,23 +110,29 @@ def get_datelist(start, end=None, DateTimeIndex = False):
             datelist.append(strdate)
         return datelist
 
-def generate_df(ticker, start, end=None):
-    #histprices_df = pd.DataFrame(columns=['symbol','date','open','high','low','close','bid','ask','volume','value','netforeign'])
-    
+def generate_df(ticker, start, end=None, csv = False):
     datelist = get_datelist(start, end)
     histprices_list = []
     for date in datelist:
         URL = get_stock_URL(ticker, date)
         data = get_data(URL)
-        # histprices_df = histprices_df.append()
+        data = parse_data(data)
         if data != None:
             histprices_list.append(data)
 
     histprices_df = pd.DataFrame(histprices_list)
+
+    if csv == True:
+        if end == None:
+            histprices_df.to_csv(rf'exports\${ticker}{start}_present.csv', index = True, header = True)
+        else:
+            histprices_df.to_csv(rf'exports\${ticker}{start}_{end}.csv', index = True, header = True)
+
     return histprices_df
 
-def to_csv(df):
+def generate_csv(ticker, start, end=None, fileName = 'data.csv'):
+    
     # Do not just convert dataframe to csv, instead manually loop through all data and input as comma separated values
     pass
 
-print(generate_df('JFC', '2-4-2020'))
+print(generate_df('JFC', '3-2-2020', csv = True))
